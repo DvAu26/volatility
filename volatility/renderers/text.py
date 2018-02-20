@@ -192,10 +192,11 @@ class GrepTextRenderer(TextRenderer):
         outfd.write("|".join(headers) + "\n")
 
         def print_row(node, outfd):
+			body = []
             outfd.write(">" * grid.path_depth(node))
             for column in grid.columns:
-                outfd.write("|" + self._cell_renderers[column.index].render(node.values[column.index]))
-            outfd.write("\n")
+                body += [self._cell_renderers[column.index].render(node.values[column.index])]
+            outfd.write("|".join(body) + "\n")
             outfd.flush()
             return outfd
 
