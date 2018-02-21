@@ -68,40 +68,40 @@ class PostgresRenderer(Renderer):
              print(db_version)
 
 #        /*self._db = psycopg2.connect(self._config.OUTPUT_FILE, isolation_level = None)
-        # Change text factory from unicode to bytestring to allow insertion of non-ASCII characters
-        # Sometimes process remainders in memory cause funky names et.al. to be retrieved
+#        Change text factory from unicode to bytestring to allow insertion of non-ASCII characters
+#        Sometimes process remainders in memory cause funky names et.al. to be retrieved
 #        self._db.text_factory = str
 #        create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, " + \
 #                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
 #        self._db.execute(create)*/
 
-        def _add_multiple_row(node, accumulator):
-            accumulator[0] = accumulator[0] + 1 #id
-            accumulator[1].append([accumulator[0]] + [str(v) for v in node.values])
-            if len(accumulator[1]) > 20000:
-                #self._db.execute("BEGIN TRANSACTION")
-                insert = "INSERT INTO " + self._plugin_name + " (id, " + \
-                     ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
-                     " VALUES (?, " + ", ".join(["?"] * len(node.values)) + ")"
-                self._db.executemany(insert, accumulator[1])
-                accumulator = [accumulator[0], []]
-                self._db.commit()
-            self._accumulator = accumulator
-            return accumulator
+             def _add_multiple_row(node, accumulator):
+                 accumulator[0] = accumulator[0] + 1 #id
+                 accumulator[1].append([accumulator[0]] + [str(v) for v in node.values])
+                 if len(accumulator[1]) > 20000:
+                     #self._db.execute("BEGIN TRANSACTION")
+                     insert = "INSERT INTO " + self._plugin_name + " (id, " + \
+                         ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
+                         " VALUES (?, " + ", ".join(["?"] * len(node.values)) + ")"
+                     self._db.executemany(insert, accumulator[1])
+                     accumulator = [accumulator[0], []]
+                     self._db.commit()
+                 self._accumulator = accumulator
+                 return accumulator
 
-        grid.populate(_add_multiple_row, self._accumulator)
+             grid.populate(_add_multiple_row, self._accumulator)
 
-        #Insert last nodes
-        if len(self._accumulator[1]) > 0:
-            #self._db.execute("BEGIN TRANSACTION")
-            insert = "INSERT INTO " + self._plugin_name + " (id, " + \
-                     ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
-                     " VALUES (?, " + ", ".join(["?"] * (len(self._accumulator[1][0])-1)) + ")"
-            self._db.executemany(insert, self._accumulator[1])
-            self._db.commit()  
+             #Insert last nodes
+             if len(self._accumulator[1]) > 0:
+                 #self._db.execute("BEGIN TRANSACTION")
+                 insert = "INSERT INTO " + self._plugin_name + " (id, " + \
+                          ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
+                          " VALUES (?, " + ", ".join(["?"] * (len(self._accumulator[1][0])-1)) + ")"
+                 self._db.executemany(insert, self._accumulator[1])
+                 self._db.commit()  
 
-        # close the communication with the PostgreSQL
-        self._db.close()
+             # close the communication with the PostgreSQL
+             self._db.close()
 
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
