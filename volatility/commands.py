@@ -32,9 +32,8 @@ from volatility.renderers.dot import DotRenderer
 from volatility.renderers.html import HTMLRenderer, JSONRenderer
 from volatility.renderers.sqlite import SqliteRenderer
 from volatility.renderers.postgres import PostgresRenderer
-from volatility.renderers.text import TextRenderer, FormatCellRenderer, GrepTextRenderer
+from volatility.renderers.text import TextRenderer, FormatCellRenderer, GrepTextRenderer, CSVTextRenderer
 from volatility.renderers.xlsx import XLSXRenderer
-from volatility.renderers.csv import TextRenderer, FormatCellRenderer, CSVTextRenderer
 
 
 class Command(object):

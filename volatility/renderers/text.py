@@ -193,10 +193,35 @@ class GrepTextRenderer(TextRenderer):
 
         def print_row(node, outfd):
             body = []
-            outfd.write(">" * grid.path_depth(node))
+            outfd.write("" * grid.path_depth(node))
             for column in grid.columns:
                 body += [self._cell_renderers[column.index].render(node.values[column.index])]
             outfd.write("|".join(body) + "\n")
+            outfd.flush()
+            return outfd
+
+        grid.populate(print_row, outfd)
+
+class CSVTextRenderer(TextRenderer):
+    def render(self, outfd, grid):
+        self._validate_grid(grid)
+
+        # Determine max width of each column
+        grid_max_widths = [0] * len(grid.columns)
+
+        # If the grid_max_widths have not been limited,
+        headers = []
+        for i in range(len(grid.columns)):
+            grid_max_widths[i] = max(grid_max_widths[i], len(grid.columns[i].name))
+            headers += [grid.columns[i].name]
+        outfd.write(",".join(headers) + "\n")
+
+        def print_row(node, outfd):
+            body = []
+            outfd.write("" * grid.path_depth(node))
+            for column in grid.columns:
+                body += [self._cell_renderers[column.index].render(node.values[column.index])]
+            outfd.write(",".join(body) + "\n")
             outfd.flush()
             return outfd
 
