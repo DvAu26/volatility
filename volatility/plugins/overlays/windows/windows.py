@@ -407,25 +407,28 @@ class _EPROCESS(obj.CType, ExecutiveObjectMixin):
         space so we need to switch address spaces when we look at
         it. This method ensures this happens automatically.
         """
-        wow64process = self.Wow64Process
+        process_as = self.get_process_address_space()
+        if process_as == None:
+            return obj.NoneObject("Unable to create process AS")
 
-        if wow64process.is_valid():
-            process_ad = self.get_process_address_space()
-            if process_ad:
+        # get the address but don't dereference 
+        ptr = obj.Object("address", offset = self.Wow64Process.v(), vm = process_as)
 
-                # starting with windows 10 the Wow64Process member
-                # points to an _EWOW64PROCESS with a Peb
-                try:
-                    offset = wow64process.Peb
-                except AttributeError:
-                    offset = wow64process
+        # make sure the validity check happens with a process AS 
+        if not ptr.is_valid():
+            return obj.NoneObject("The Wow64Process pointer is not valid in process AS")
 
-                peb32 = obj.Object("_PEB32", offset = offset, vm = process_ad, name = "Peb32", parent = self)
+        # windows 10 
+        if process_as.profile.has_type("_EWOW64PROCESS"):
+            return ptr.cast("_EWOW64PROCESS").Peb.dereference_as("_PEB32")
 
-                if peb32.is_valid():
-                    return peb32
-        
-        return obj.NoneObject("Peb32 not found")
+        # vista sp0-sp1 and 2003 sp1-sp2
+        elif process_as.profile.has_type("_WOW64_PROCESS"):
+            return ptr.cast("_WOW64_PROCESS").Wow64.dereference_as("_PEB32")
+
+        # everything else 
+        else:
+            return ptr.cast("_PEB32") 
 
     def get_process_address_space(self):
         """ Gets a process address space for a task given in _EPROCESS """
@@ -698,12 +701,33 @@ class _EPROCESS(obj.CType, ExecutiveObjectMixin):
         if not obj.CType.is_valid(self):
             return False
 
+        name = str(self.ImageFileName)
+        if not name or len(name) == 0 or name[0] == "\x00":
+            return False
+
+        # The System/PID 4 process has no create time
+        if not (str(name) == "System" and self.UniqueProcessId == 4):
+            if self.CreateTime.v() == 0:
+                return False
+                
+            ctime = self.CreateTime.as_datetime()
+            if ctime == None:
+                return False
+
+            if not (1998 < ctime.year < 2030):
+                return False
+                
+        # NT pids are divisible by 4
+        if self.UniqueProcessId % 4 != 0:
+            return False
+
         if (self.Pcb.DirectoryTableBase == 0):
             return False
 
-        if (self.Pcb.DirectoryTableBase % 0x20 != 0):
+        # check for all 0s besides the PCID entries
+        if self.Pcb.DirectoryTableBase & ~0xfff == 0:
             return False
-
+    
         list_head = self.ThreadListHead
         kernel = 0x80000000
 
@@ -726,6 +750,12 @@ class _TOKEN(obj.CType):
         if self.UserAndGroupCount < 0xFFFF:
             for sa in self.UserAndGroups.dereference():
                 sid = sa.Sid.dereference_as('_SID')
+                # catch invalid pointers (UserAndGroupCount is too high)
+                if sid == None:
+                    raise StopIteration
+                # this mimics the windows API IsValidSid
+                if sid.Revision & 0xF != 1 or sid.SubAuthorityCount > 15:
+                    raise StopIteration
                 id_auth = ""
                 for i in sid.IdentifierAuthority.Value:
                     id_auth = i

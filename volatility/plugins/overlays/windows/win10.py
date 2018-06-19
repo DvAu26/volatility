@@ -601,7 +601,78 @@ class _OBJECT_HEADER_10_16299(_OBJECT_HEADER_10):
         64: 'DxgkSharedBundleObject',
         65: 'VRegConfigurationContext',
     	}
-    
+
+class _OBJECT_HEADER_10_17134(_OBJECT_HEADER_10):
+
+    type_map = {
+        2: "Type",
+        3: "Directory",
+        4: "SymbolicLink",
+        5: "Token",
+        6: "Job",
+        7: "Process",
+        8: "Thread",
+        9: "Partition",
+        10: "UserApcReserve",
+        11: "IoCompletionReserve",
+        12: "ActivityReference",
+        13: "PsSiloContextPaged",
+        14: "PsSiloContextNonPaged",
+        15: "DebugObject",
+        16: "Event",
+        17: "Mutant",
+        18: "Callback",
+        19: "Semaphore",
+        20: "Timer",
+        21: "IRTimer",
+        22: "Profile",
+        23: "KeyedEvent",
+        24: "WindowStation",
+        25: "Desktop",
+        26: "Composition",
+        27: "RawInputManager",
+        28: "CoreMessaging",
+        29: "TpWorkerFactory",
+        30: "Adapter",
+        31: "Controller",
+        32: "Device",
+        33: "Driver",
+        34: "IoCompletion",
+        35: "WaitCompletionPacket",
+        36: "File",
+        37: "TmTm",
+        38: "TmTx",
+        39: "TmRm",
+        40: "TmEn",
+        41: "Section",
+        42: "Session",
+        43: "Key",
+        44: "RegistryTransaction",
+        45: "ALPC",
+        46: "EnergyTracker",
+        47: "PowerRequest",
+        48: "WmiGuid",
+        49: "EtwRegistration",
+        50: "EtwSessionDemuxEntry",
+        51: "EtwConsumer",
+        52: "CoverageSampler",
+        53: "DmaAdapter",
+        54: "PcwObject",
+        55: "FilterConnectionPort",
+        56: "FilterCommunicationPort",
+        57: "NdisCmState",
+        58: "DxgkSharedResource",
+        59: "DxgkSharedKeyedMutexObject",
+        60: "DxgkSharedSyncObject",
+        61: "DxgkSharedSwapChainObject",
+        62: "DxgkDisplayManagerObject",
+        63: "DxgkCurrentDxgProcessObject",
+        64: "DxgkSharedProtectedSessionObject",
+        65: "DxgkSharedBundleObject",
+        66: "DxgkCompositionObject",
+        67: "VRegConfigurationContext",
+    }
+
 class _HANDLE_TABLE_10_DD08DD42(win8._HANDLE_TABLE_81R264):
     
     def decode_pointer(self, value):
@@ -624,7 +695,15 @@ class Win10ObjectHeader(obj.ProfileModification):
         metadata = profile.metadata
         build = metadata.get("build", 0)
 
-        if build >= 16299:
+        if build >= 17134:
+            header = _OBJECT_HEADER_10_17134
+
+            ## update the handle table here as well
+            if metadata.get("memory_model") == "64bit":
+                profile.object_classes.update({
+                    "_HANDLE_TABLE": _HANDLE_TABLE_10_DD08DD42})
+
+        elif build >= 16299:
             header = _OBJECT_HEADER_10_16299
 
             ## update the handle table here as well
@@ -648,7 +727,7 @@ class Win10ObjectHeader(obj.ProfileModification):
                 profile.object_classes.update({
                     "_HANDLE_TABLE": _HANDLE_TABLE_10_DD08DD42})
             
-        elif build >= 10240:
+        elif build >= 10586:
             header = _OBJECT_HEADER_10_1AC738FB
         else:
             header = _OBJECT_HEADER_10
@@ -689,7 +768,7 @@ class Win10PoolHeader(obj.ProfileModification):
     conditions = {'os': lambda x: x == 'windows',
                   'major': lambda x: x == 6,
                   'minor': lambda x: x == 4,
-                  'build': lambda x: x == 10240}
+                  'build': lambda x: x == 10586}
 
     def modification(self, profile):
 
@@ -732,13 +811,23 @@ class Win10x64(obj.Profile):
     _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x64_vtypes'
     _md_product = ["NtProductWinNt"]
 
+class Win10x64_10240_17770(obj.Profile):
+    """ A Profile for Windows 10 x64 (10.0.10240.17770 / 2018-02-10) """
+    _md_memory_model = '64bit'
+    _md_os = 'windows'
+    _md_major = 6
+    _md_minor = 4
+    _md_build = 10240
+    _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x64_10240_17770_vtypes'
+    _md_product = ["NtProductWinNt"]
+
 class Win10x64_10586(obj.Profile):
     """ A Profile for Windows 10 x64 (10.0.10586.306 / 2016-04-23) """
     _md_memory_model = '64bit'
     _md_os = 'windows'
     _md_major = 6
     _md_minor = 4
-    _md_build = 10240
+    _md_build = 10586
     _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x64_1AC738FB_vtypes'
     _md_product = ["NtProductWinNt"]
 
@@ -762,13 +851,23 @@ class Win10x86(obj.Profile):
     _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x86_vtypes'
     _md_product = ["NtProductWinNt"]
 
+class Win10x86_10240_17770(obj.Profile):
+    """ A Profile for Windows 10 x86 (10.0.10240.17770 / 2018-02-10) """
+    _md_memory_model = '32bit'
+    _md_os = 'windows'
+    _md_major = 6
+    _md_minor = 4
+    _md_build = 10240
+    _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x86_10240_17770_vtypes'
+    _md_product = ["NtProductWinNt"]
+
 class Win10x86_10586(obj.Profile):
     """ A Profile for Windows 10 x86 (10.0.10586.420 / 2016-05-28) """
     _md_memory_model = '32bit'
     _md_os = 'windows'
     _md_major = 6
     _md_minor = 4
-    _md_build = 10240
+    _md_build = 10586
     _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x86_44B89EEA_vtypes'
     _md_product = ["NtProductWinNt"]
 
@@ -812,6 +911,16 @@ class Win10x86_16299(obj.Profile):
     _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x86_16299_vtypes'
     _md_product = ["NtProductWinNt"]
 
+class Win10x86_17134(obj.Profile):
+    """ A Profile for Windows 10 x86 (10.0.17134.1 / 2018-04-11) """
+    _md_memory_model = '32bit'
+    _md_os = 'windows'
+    _md_major = 6
+    _md_minor = 4
+    _md_build = 17134
+    _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x86_17134_vtypes'
+    _md_product = ["NtProductWinNt"]
+
 class Win10x64_15063(obj.Profile):
     """ A Profile for Windows 10 x64 (10.0.15063.0 / 2017-04-04) """
     _md_memory_model = '64bit'
@@ -830,4 +939,14 @@ class Win10x64_16299(obj.Profile):
     _md_minor = 4
     _md_build = 16299
     _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x64_16299_vtypes'
+    _md_product = ["NtProductWinNt"]
+
+class Win10x64_17134(obj.Profile):
+    """ A Profile for Windows 10 x64 (10.0.17134.1 / 2018-04-11) """
+    _md_memory_model = '64bit'
+    _md_os = 'windows'
+    _md_major = 6
+    _md_minor = 4
+    _md_build = 17134
+    _md_vtype_module = 'volatility.plugins.overlays.windows.win10_x64_17134_vtypes'
     _md_product = ["NtProductWinNt"]
