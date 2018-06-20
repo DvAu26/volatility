@@ -19,6 +19,7 @@
 
 from volatility.renderers.basic import Renderer, Bytes
 from volatility import debug
+from configparser import ConfigParser
 import psycopg2
 
 class PostgresRenderer(Renderer):
@@ -28,6 +29,23 @@ class PostgresRenderer(Renderer):
         self._config = config
         self._db = None
         self._accumulator = [0,[]]
+
+    def config(self,filename='volatility/renderers/database.ini', section='postgresql'):
+        # create a parser
+        parser = ConfigParser()
+        # read config file
+        parser.read(filename)
+     
+        # get section, default to postgresql
+        db = {}
+        if parser.has_section(section):
+            params = parser.items(section)
+            for param in params:
+                db[param[0]] = param[1]
+        else:
+            raise Exception('Section {0} not found in the {1} file'.format(section, filename))
+     
+        return db
 
     column_types = [(str, "TEXT"),
                     (int, "TEXT"),
@@ -50,7 +68,7 @@ class PostgresRenderer(Renderer):
         conn = None
         try:
              # read connection parameters
-             params = config()
+             params = self.config()
              
              # connect to the PostgreSQL server
              print('Connecting to the PostgreSQL database...')
@@ -70,11 +88,15 @@ class PostgresRenderer(Renderer):
 #        /*self._db = psycopg2.connect(self._config.OUTPUT_FILE, isolation_level = None)
 #        Change text factory from unicode to bytestring to allow insertion of non-ASCII characters
 #        Sometimes process remainders in memory cause funky names et.al. to be retrieved
-#        self._db.text_factory = str
-#        create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, " + \
-#                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
-#        self._db.execute(create)*/
-
+             #self._db.text_factory = str
+             create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, " + \
+                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
+             print create
+             self._db.execute(""+create+"")
+             self._db.close()
+             conn.commit()
+             
+             """ NOT USE FOR THE MOMENT
              def _add_multiple_row(node, accumulator):
                  accumulator[0] = accumulator[0] + 1 #id
                  accumulator[1].append([accumulator[0]] + [str(v) for v in node.values])
@@ -93,7 +115,7 @@ class PostgresRenderer(Renderer):
 
              #Insert last nodes
              if len(self._accumulator[1]) > 0:
-                 #self._db.execute("BEGIN TRANSACTION")
+                 self._db.execute("BEGIN TRANSACTION")
                  insert = "INSERT INTO " + self._plugin_name + " (id, " + \
                           ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
                           " VALUES (?, " + ", ".join(["?"] * (len(self._accumulator[1][0])-1)) + ")"
@@ -102,7 +124,7 @@ class PostgresRenderer(Renderer):
 
              # close the communication with the PostgreSQL
              self._db.close()
-
+             """
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
         finally:
