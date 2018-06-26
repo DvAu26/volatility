@@ -25,6 +25,8 @@ import psycopg2
 class PostgresRenderer(Renderer):
 
     def __init__(self, plugin_name, config):
+        """config.add_option('CASENUMBER', short_option = 'N', default = '001', action = 'store', help = 'Case Number default = 001')
+        config.add_option('COMPUTERNAME', short_option = 'C', default = 'NoName', action = 'store', help = 'ComputerName default = NoName')"""
         self._plugin_name = plugin_name
         self._config = config
         self._db = None
@@ -63,8 +65,11 @@ class PostgresRenderer(Renderer):
         return name
 
     def render(self, outfd, grid):
-         
-        """ Connect to the PostgreSQL database server """
+        print self._config.CASENUMBER
+        print self._config.COMPUTERNAME
+        """ Connect to the PostgreSQL database server 
+            we have to find how put Casenumber and computername
+            in the database. First way all in the command table"""
         conn = None
         try:
              # read connection parameters
@@ -84,6 +89,16 @@ class PostgresRenderer(Renderer):
              # display the PostgreSQL database server version
              db_version = self._db.fetchone()
              print db_version
+
+             """ bestial version 
+             create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, casenumber STR, computername STR, " + \
+                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
+             """
+
+             """ best version but we have to create case number table and computername table
+             create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, Idcase INTEGER, Idcomput INTEGER, " + \
+                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
+             """
 
              create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, " + \
                  ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"

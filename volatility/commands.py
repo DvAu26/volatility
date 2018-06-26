@@ -71,6 +71,9 @@ class Command(object):
         config.add_option("VERBOSE", default = 0, action = 'count',
                           cache_invalidator = False,
                           short_option = 'v', help = 'Verbose information')
+        config.add_option('CASENUMBER', short_option = 'N', default = '001', action = 'store', help = 'Case Number default = 001')
+        config.add_option('COMPUTERNAME', short_option = 'C', default = 'NoName', action = 'store', help = 'ComputerName default = NoName')
+        
 
     @classmethod
     def help(cls):
