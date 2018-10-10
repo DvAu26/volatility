@@ -25,6 +25,8 @@ import psycopg2
 class PostgresRenderer(Renderer):
 
     def __init__(self, plugin_name, config):
+        """config.add_option('CASENUMBER', short_option = 'N', default = '001', action = 'store', help = 'Case Number default = 001')
+        config.add_option('COMPUTERNAME', short_option = 'C', default = 'NoName', action = 'store', help = 'ComputerName default = NoName')"""
         self._plugin_name = plugin_name
         self._config = config
         self._db = None
@@ -63,8 +65,11 @@ class PostgresRenderer(Renderer):
         return name
 
     def render(self, outfd, grid):
-         
-        """ Connect to the PostgreSQL database server """
+        print self._config.CASENUMBER
+        print self._config.COMPUTERNAME
+        """ Connect to the PostgreSQL database server 
+            we have to find how put Casenumber and computername
+            in the database. First way all in the command table"""
         conn = None
         try:
              # read connection parameters
@@ -78,53 +83,58 @@ class PostgresRenderer(Renderer):
              self._db = conn.cursor()
         
              # execute a statement
-             print('PostgreSQL database version:')
+             print 'PostgreSQL database version: '
              self._db.execute('SELECT version()')
  
              # display the PostgreSQL database server version
              db_version = self._db.fetchone()
-             print(db_version)
+             print db_version
 
-#        /*self._db = psycopg2.connect(self._config.OUTPUT_FILE, isolation_level = None)
-#        Change text factory from unicode to bytestring to allow insertion of non-ASCII characters
-#        Sometimes process remainders in memory cause funky names et.al. to be retrieved
-             #self._db.text_factory = str
+             """ bestial version 
+             create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, casenumber STR, computername STR, " + \
+                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
+             """
+
+             """ best version but we have to create case number table and computername table
+             create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, Idcase INTEGER, Idcomput INTEGER, " + \
+                 ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
+             """
+
              create = "CREATE TABLE IF NOT EXISTS " + self._plugin_name + "( id INTEGER, " + \
                  ", ".join(['"' + self._sanitize_name(i.name) + '" ' + self._column_type(i.type) for i in grid.columns]) + ")"
-             print create
+
              self._db.execute(""+create+"")
-             self._db.close()
+             #self._db.close()
              conn.commit()
              
-             """ NOT USE FOR THE MOMENT
              def _add_multiple_row(node, accumulator):
                  accumulator[0] = accumulator[0] + 1 #id
                  accumulator[1].append([accumulator[0]] + [str(v) for v in node.values])
                  if len(accumulator[1]) > 20000:
-                     #self._db.execute("BEGIN TRANSACTION")
                      insert = "INSERT INTO " + self._plugin_name + " (id, " + \
                          ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
-                         " VALUES (?, " + ", ".join(["?"] * len(node.values)) + ")"
+                         " VALUES (%s, " + ", ".join(["%s"] * len(node.values)) + ")"
                      self._db.executemany(insert, accumulator[1])
                      accumulator = [accumulator[0], []]
-                     self._db.commit()
+                     conngir.commit()
                  self._accumulator = accumulator
                  return accumulator
-
+             
              grid.populate(_add_multiple_row, self._accumulator)
+             print self._accumulator
 
              #Insert last nodes
              if len(self._accumulator[1]) > 0:
-                 self._db.execute("BEGIN TRANSACTION")
+                 """INSERT INTO PSList (id, ....,) VALUES (..,..,..) """
                  insert = "INSERT INTO " + self._plugin_name + " (id, " + \
                           ", ".join(['"' + self._sanitize_name(i.name) + '"' for i in grid.columns]) + ") " + \
-                          " VALUES (?, " + ", ".join(["?"] * (len(self._accumulator[1][0])-1)) + ")"
+                          " VALUES (%s, " + ", ".join(["%s"] * (len(self._accumulator[1][0])-1)) + ")"
                  self._db.executemany(insert, self._accumulator[1])
-                 self._db.commit()  
+                 conn.commit()  
 
              # close the communication with the PostgreSQL
              self._db.close()
-             """
+             
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
         finally:
