@@ -31,7 +31,7 @@ from volatility.renderers.basic import Address, Address64, Hex, Bytes
 from volatility.renderers.dot import DotRenderer
 from volatility.renderers.html import HTMLRenderer, JSONRenderer
 from volatility.renderers.sqlite import SqliteRenderer
-from volatility.renderers.postgres import PostgresRenderer
+#from volatility.renderers.postgres import PostgresRenderer
 from volatility.renderers.text import TextRenderer, FormatCellRenderer, GrepTextRenderer, CSVTextRenderer
 from volatility.renderers.xlsx import XLSXRenderer
 
@@ -317,13 +317,13 @@ class Command(object):
         except TypeError, why:
             debug.error(why)
 
-    def render_postgres(self, outfd, data):
+    '''def render_postgres(self, outfd, data):
         try:
             self._render(outfd, PostgresRenderer(self.__class__.__name__, self._config), data)
         except NotImplementedError, why:
             debug.error(why)
         except TypeError, why:
-            debug.error(why)
+            debug.error(why)'''
 
     def render_dot(self, outfd, data):
         try:
